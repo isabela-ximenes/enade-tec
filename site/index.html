@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Protótipo navegável do ENADE TEC: estude para o ENADE resolvendo chamados da AETHELTEC.">
+<title>ENADE TEC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: app de uma coluna (máx. 880px) com barra superior; cada missão é um "chamado" interno da AETHELTEC com ID em fonte mono */
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --surface-2:#E9F2F0; --ink:#15212B; --muted:#55636F; --line:#D3DCE2; --line-strong:#7B8B97;
+  --brand:#0B6B61; --brand-strong:#07524A; --on-brand:#FFFFFF;
+  --xp:#7D5200; --xp-soft:#FCF0D4;
+  --ok:#15703A; --ok-soft:#E2F3E7; --err:#B3261E; --err-soft:#FBE8E6; --warn:#6E4E00; --warn-soft:#FFF5D6;
+  --focus:#1D4ED8;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E161B; --surface:#15212A; --surface-2:#173029; --ink:#E5ECF0; --muted:#9DAFBB; --line:#2A3B46; --line-strong:#6E8291;
+  --brand:#3FC2AF; --brand-strong:#66D6C5; --on-brand:#052019;
+  --xp:#F1C35E; --xp-soft:#33280E; --ok:#5DD08B; --ok-soft:#10301E; --err:#FF8B80; --err-soft:#3A1614; --warn:#F1C35E; --warn-soft:#33290E;
+  --focus:#8DB6FF; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0E161B; --surface:#15212A; --surface-2:#173029; --ink:#E5ECF0; --muted:#9DAFBB; --line:#2A3B46; --line-strong:#6E8291;
+  --brand:#3FC2AF; --brand-strong:#66D6C5; --on-brand:#052019;
+  --xp:#F1C35E; --xp-soft:#33280E; --ok:#5DD08B; --ok-soft:#10301E; --err:#FF8B80; --err-soft:#3A1614; --warn:#F1C35E; --warn-soft:#33290E;
+  --focus:#8DB6FF; color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root{color-scheme:light}
+html{scroll-padding-top:130px}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1.0625rem;line-height:1.55}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.6rem,4vw,2.15rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.3rem;font-weight:700}
+h3{font-size:1.08rem;font-weight:700}
+p{margin:0}
+a{color:var(--brand)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:16px;top:-60px;background:var(--surface);color:var(--ink);padding:8px 12px;border-radius:6px;z-index:10}
+.skip:focus{top:8px}
+
+.proto{background:var(--warn-soft);color:var(--warn);font-size:.85rem;padding:6px 16px;text-align:center;border-bottom:1px solid var(--line)}
+.proto strong{font-weight:700}
+.topbar{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.topbar-in{max-width:880px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.mark{font-family:var(--f-display);font-weight:800;font-size:1.15rem;letter-spacing:.02em;display:flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none}
+.mark i{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;background:var(--brand);color:var(--on-brand);font-style:normal;font-size:.8rem}
+.chips{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}
+.nav{display:flex;gap:4px;flex-wrap:wrap;width:100%}
+.nav button{background:none;border:0;font:inherit;font-size:.95rem;color:var(--muted);padding:6px 10px;border-radius:6px;cursor:pointer}
+.nav button[aria-current="page"]{color:var(--ink);background:var(--surface-2);font-weight:700}
+.nav button:hover{color:var(--ink)}
+.nav .out{margin-left:auto}
+@media (max-width:560px){.nav button{padding:6px 8px}.nav .so-largo{display:none}}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap}
+.pill.xp{background:var(--xp-soft);color:var(--xp);border-color:transparent}
+.pill.course{background:var(--surface-2);color:var(--brand-strong);border-color:transparent}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.prog{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag{font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px;white-space:nowrap}
+.mono{font-family:var(--f-mono);font-size:.82rem;letter-spacing:.02em;color:var(--muted)}
+
+main{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:24px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lede{color:var(--muted);max-width:62ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.grid2>*{min-width:0}
+
+.btn{font:inherit;font-weight:700;font-size:1rem;border-radius:8px;padding:11px 18px;border:2px solid var(--brand);background:var(--brand);color:var(--on-brand);cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn:hover{background:var(--brand-strong);border-color:var(--brand-strong)}
+.btn.sec{background:transparent;color:var(--brand)}
+.btn.sec:hover{background:var(--surface-2)}
+.btn.link{border:0;background:none;color:var(--brand);padding:4px 0;text-decoration:underline;font-weight:400}
+.btn[disabled]{opacity:.6;cursor:progress}
+
+/* Formulários */
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-weight:700}
+.hint{font-size:.88rem;color:var(--muted)}
+input[type=text],input[type=email],input[type=password]{font:inherit;padding:10px 12px;border:2px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+input[aria-invalid="true"]{border-color:var(--err)}
+.ferr{color:var(--err);font-size:.9rem;font-weight:700}
+.alert{border-radius:8px;padding:12px 14px;border:1px solid}
+.alert.err{background:var(--err-soft);border-color:var(--err);color:var(--ink)}
+.alert.info{background:var(--surface-2);border-color:transparent}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{font:inherit;font-weight:700;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--brand)}
+
+.auth{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;align-items:start}
+.auth>*{min-width:0}
+.pitch{display:flex;flex-direction:column;gap:14px;padding-top:8px}
+.pitch ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem}
+.divider:before,.divider:after{content:"";height:1px;background:var(--line);flex:1}
+
+/* Escolha de curso e alternativas */
+.choice{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line-strong);border-radius:var(--r);padding:14px 16px;background:var(--surface);cursor:pointer}
+.choice:has(input:checked){border-color:var(--brand);background:var(--surface-2)}
+.choice:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.choice input{margin-top:5px;width:18px;height:18px;accent-color:var(--brand);flex:none}
+.choice .t{font-weight:700}
+.choice .letter{font-family:var(--f-mono);font-weight:500;color:var(--muted);margin-right:4px}
+/* Resultado vence o estado "marcada": a alternativa errada marcada precisa aparecer como erro */
+.choice.is-right,.choice.is-right:has(input:checked){border-color:var(--ok);background:var(--ok-soft)}
+.choice.is-wrong,.choice.is-wrong:has(input:checked){border-color:var(--err);background:var(--err-soft)}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+legend{padding:0;margin-bottom:10px;font-size:1.08rem;font-weight:700;line-height:1.45}
+pre.code{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--f-mono);font-size:.88rem;margin:0}
+
+/* Chamados */
+.tickets{display:flex;flex-direction:column;gap:12px}
+.ticket{display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.ticket>*{min-width:0}
+.ticket .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ticket .act{grid-row:1 / span 3;grid-column:2}
+@media (max-width:560px){.ticket{grid-template-columns:1fr}.ticket .act{grid-row:auto;grid-column:1}}
+.ticket-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
+.brief{border-left:4px solid var(--brand);padding:4px 0 4px 16px;color:var(--ink);max-width:66ch}
+
+/* Nível e barras */
+.level{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:center}
+.level .big{font-family:var(--f-display);font-weight:800;font-size:2.2rem;color:var(--xp);grid-row:span 2;font-variant-numeric:tabular-nums}
+.bar{height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--brand);border-radius:999px}
+.bar.xpbar>span{background:var(--xp)}
+.reco{background:var(--surface-2);border:0}
+.reco .why{color:var(--muted);font-size:.95rem}
+
+.comp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.comp:last-child{border-bottom:0}
+.comp .bar{grid-column:1 / -1}
+.num{font-variant-numeric:tabular-nums}
+.insuf{grid-column:1 / -1;font-size:.9rem;color:var(--warn);background:var(--warn-soft);padding:6px 10px;border-radius:6px}
+
+.feedback{border-radius:var(--r);padding:18px 20px;border:2px solid;display:flex;flex-direction:column;gap:10px}
+.feedback.ok{background:var(--ok-soft);border-color:var(--ok)}
+.feedback.no{background:var(--err-soft);border-color:var(--err)}
+.feedback h2{display:flex;align-items:center;gap:10px}
+.feedback .ico{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;color:var(--surface);font-size:1rem;flex:none}
+.feedback.ok .ico{background:var(--ok)}
+.feedback.no .ico{background:var(--err)}
+.xpline{font-weight:700;color:var(--xp)}
+
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none;border-top-color:var(--line)}}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.empty{text-align:center;padding:32px 20px;color:var(--muted);display:flex;flex-direction:column;gap:12px;align-items:center}
+.switch{display:flex;gap:10px;align-items:flex-start}
+.switch input{width:18px;height:18px;margin-top:4px;accent-color:var(--brand)}
+ul.clean{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<div class="proto" role="note"><strong>Protótipo funcional v0.1</strong> · conteúdo fictício pendente de revisão pedagógica · os dados ficam só neste navegador</div>
+<header class="topbar" id="topbar" hidden></header>
+<main id="main" tabindex="-1"></main>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   CONTEÚDO — fictício, criado para o protótipo.
+   Precisa de revisão da equipe de Conteúdo (Isabelle) antes de qualquer uso real.
+   ============================================================ */
+const COURSES = {
+  GTI: { sigla: "GTI", nome: "Gestão da Tecnologia da Informação" },
+  ADS: { sigla: "ADS", nome: "Análise e Desenvolvimento de Sistemas" },
+};
+
+const MISSIONS = [
+  {
+    id: "AET-ADS-0142", course: "ADS", title: "O relatório de vendas que trava",
+    from: "Marina, coordenadora de Dados",
+    brief: "O relatório de vendas da AETHELTEC passou a demorar quase dez segundos para abrir. A diretoria usa esse relatório toda segunda de manhã. Marina pediu que você investigue o banco e o código antes da reunião.",
+    questions: [
+      { id: "ADS0142-1", comp: "Banco de Dados",
+        text: "A consulta abaixo roda em uma tabela com 3 milhões de linhas e demora 9 segundos. O plano de execução mostra varredura completa da tabela. Qual é a ação mais adequada?",
+        code: "SELECT * FROM pedidos WHERE cliente_id = 4821;",
+        options: ["Aumentar a memória do servidor de aplicação.", "Trocar SELECT * por SELECT COUNT(*).", "Criar um índice na coluna cliente_id.", "Remover a chave primária da tabela pedidos."],
+        answer: 2,
+        explain: "Sem índice, o banco precisa ler todas as linhas para achar as do cliente 4821. Um índice (normalmente uma árvore B) localiza essas linhas sem ler a tabela inteira. Trocar por COUNT(*) muda o resultado da consulta, a memória do servidor de aplicação não atua no banco e remover a chave primária prejudica a integridade dos dados." },
+      { id: "ADS0142-2", comp: "Algoritmos e Estruturas de Dados",
+        text: "Uma função verifica se há códigos de pedido repetidos em uma lista com n itens. Ela compara cada item com todos os outros usando dois laços aninhados. Qual é a complexidade dessa função e qual alternativa a melhora?",
+        options: ["O(n²). Guardar os códigos já vistos em um conjunto (hash set) reduz para O(n) em média.", "O(n). Não há alternativa mais eficiente.", "O(log n). Ordenar a lista antes deixaria a função mais lenta.", "O(n³). Reescrever a função de forma recursiva resolve o problema."],
+        answer: 0,
+        explain: "Dois laços aninhados sobre n itens fazem da ordem de n × n comparações, ou seja, O(n²). Com um conjunto baseado em hash, cada consulta e inserção custa O(1) em média, e a lista é percorrida uma única vez: O(n). Recursão não muda a quantidade de comparações." },
+      { id: "ADS0142-3", comp: "Banco de Dados",
+        text: "A tabela pedidos guarda nome_cliente e telefone_cliente em cada pedido. Um atendente atualizou o telefone em um pedido, mas os outros pedidos do mesmo cliente continuaram com o número antigo. Qual é o problema e como resolvê-lo?",
+        options: ["Deadlock. Basta envolver as atualizações em uma transação.", "Anomalia de atualização. Mover os dados do cliente para uma tabela clientes e referenciá-la por chave estrangeira.", "Injeção de SQL. Usar consultas parametrizadas.", "Falta de índice. Criar um índice em telefone_cliente."],
+        answer: 1,
+        explain: "Repetir dados do cliente em cada pedido cria redundância, e a mesma informação fica com valores diferentes: é uma anomalia de atualização. A normalização guarda o cliente uma única vez em sua própria tabela, e cada pedido aponta para ele por chave estrangeira." },
+    ],
+  },
+  {
+    id: "AET-ADS-0157", course: "ADS", title: "Mudança no app de ponto",
+    from: "Diego, product owner do app de ponto",
+    brief: "O RH quer que o app de ponto calcule horas extras automaticamente. O time trabalha com Scrum e está no meio da sprint. Diego precisa de ajuda para organizar o pedido sem atrapalhar o que já está em andamento.",
+    questions: [
+      { id: "ADS0157-1", comp: "Engenharia de Software",
+        text: "No meio da sprint, o RH traz uma nova funcionalidade que não é urgente. Segundo o Scrum, o que o time deve fazer?",
+        options: ["Interromper a sprint e começar a nova funcionalidade.", "Pedir que um desenvolvedor faça em horas extras, sem registrar.", "Cancelar a sprint e planejar outra.", "Registrar a demanda no Product Backlog para ser priorizada em uma próxima sprint."],
+        answer: 3,
+        explain: "No Scrum, o objetivo da sprint é protegido. Demandas novas entram no Product Backlog, e o Product Owner as prioriza para as próximas sprints. Cancelar a sprint é uma medida extrema, reservada a quando o objetivo dela perde o sentido." },
+      { id: "ADS0157-2", comp: "Engenharia de Software",
+        text: "\"O sistema deve registrar a marcação de ponto em até 2 segundos.\" Como esse requisito é classificado?",
+        options: ["Requisito funcional.", "Requisito não funcional, de desempenho.", "Regra de negócio.", "Caso de uso."],
+        answer: 1,
+        explain: "O requisito não descreve o que o sistema faz (isso é registrar o ponto). Ele descreve quão bem o sistema deve fazer: um limite de tempo de resposta. Por isso é um requisito não funcional de desempenho." },
+      { id: "ADS0157-3", comp: "Engenharia de Software",
+        text: "O time escreveu um teste automatizado que verifica apenas a função calcularHorasExtras, substituindo o banco de dados por um objeto simulado. Que tipo de teste é esse?",
+        options: ["Teste de integração.", "Teste de carga.", "Teste de unidade.", "Teste de aceitação."],
+        answer: 2,
+        explain: "O teste isola uma única unidade de código e simula suas dependências. Teste de integração verifica a comunicação entre partes reais, teste de carga mede o comportamento sob volume e teste de aceitação confirma o requisito do ponto de vista do usuário." },
+    ],
+  },
+  {
+    id: "AET-GTI-0088", course: "GTI", title: "Incidente na sexta à noite",
+    from: "Paulo, gerente de operações de TI",
+    brief: "Sexta-feira, 19h: o sistema de faturamento da AETHELTEC saiu do ar no fechamento do mês. Ao mesmo tempo, chegou um e-mail estranho pedindo credenciais. Paulo quer que você ajude a conduzir a resposta.",
+    questions: [
+      { id: "GTI0088-1", comp: "Gestão de Serviços de TI",
+        text: "Segundo as boas práticas do ITIL, qual é o objetivo principal do gerenciamento de incidentes?",
+        options: ["Encontrar a causa raiz antes de qualquer outra ação.", "Registrar a mudança no banco de dados de configuração.", "Restaurar a operação normal do serviço o mais rápido possível, minimizando o impacto no negócio.", "Renegociar o acordo de nível de serviço com o cliente."],
+        answer: 2,
+        explain: "Gerenciamento de incidentes busca restabelecer o serviço rapidamente. Investigar a causa raiz é papel do gerenciamento de problemas, que acontece depois, para evitar que o incidente se repita." },
+      { id: "GTI0088-2", comp: "Segurança da Informação",
+        text: "Um analista recebe um e-mail que parece ser do diretor, pedindo com urgência a senha de administrador do servidor. O que está acontecendo e como agir?",
+        options: ["Engenharia social (phishing). Não informar a senha, confirmar o pedido por outro canal e reportar à segurança.", "Ataque de negação de serviço. Reiniciar o servidor.", "Ransomware. Pagar o resgate para liberar os dados.", "Falha de backup. Restaurar o último backup."],
+        answer: 0,
+        explain: "Urgência, autoridade e pedido de credencial por e-mail são sinais típicos de engenharia social. Senhas não devem ser enviadas por e-mail. O pedido deve ser confirmado por um canal independente e o caso reportado." },
+      { id: "GTI0088-3", comp: "Segurança da Informação",
+        text: "A AETHELTEC quer conseguir recuperar seus dados mesmo que um ransomware criptografe os servidores e os backups conectados à rede. Qual prática atende melhor a esse objetivo?",
+        options: ["Manter o backup no mesmo servidor, em outra pasta.", "Seguir a regra 3-2-1, com pelo menos uma cópia isolada ou offline.", "Fazer backup apenas uma vez por mês.", "Desativar o antivírus para acelerar a cópia."],
+        answer: 1,
+        explain: "A regra 3-2-1 recomenda três cópias, em dois tipos de mídia, com uma fora do local principal. Uma cópia isolada ou offline não pode ser criptografada pelo ataque que atinge a rede. Restaurações devem ser testadas periodicamente." },
+    ],
+  },
+  {
+    id: "AET-GTI-0093", course: "GTI", title: "Migração para a nuvem atrasada",
+    from: "Lúcia, gerente do projeto de migração",
+    brief: "A migração dos sistemas internos para a nuvem está atrasada, e o patrocinador acabou de pedir uma funcionalidade nova. Lúcia quer entender onde está o risco de prazo e como responder ao pedido.",
+    questions: [
+      { id: "GTI0093-1", comp: "Gestão de Projetos",
+        text: "A atividade A leva 4 dias. Depois dela, B (3 dias) e C (5 dias) podem ser feitas em paralelo. D (2 dias) só começa quando B e C terminam. Qual é a duração mínima do projeto?",
+        options: ["9 dias.", "14 dias.", "6 dias.", "11 dias."],
+        answer: 3,
+        explain: "Há dois caminhos: A → B → D = 9 dias e A → C → D = 11 dias. O caminho mais longo, A → C → D, é o caminho crítico e define a duração mínima. Atrasar C atrasa o projeto; B tem 2 dias de folga." },
+      { id: "GTI0093-2", comp: "Gestão de Projetos",
+        text: "O patrocinador pede uma funcionalidade nova sem alterar prazo nem orçamento. Como esse fenômeno é chamado e qual é a conduta adequada?",
+        options: ["Marco do projeto. Registrar a data no cronograma.", "Aumento descontrolado de escopo (scope creep). Avaliar o impacto e submeter o pedido ao controle de mudanças.", "Lições aprendidas. Documentar ao final do projeto.", "Caminho crítico. Remover atividades com folga."],
+        answer: 1,
+        explain: "Incluir trabalho sem ajustar prazo, custo ou recursos é scope creep. O pedido deve passar pelo controle integrado de mudanças, com análise de impacto e aprovação formal antes de entrar no escopo." },
+      { id: "GTI0093-3", comp: "Governança de TI",
+        text: "Durante a migração, a diretoria pergunta qual é a diferença entre COBIT e ITIL. Qual afirmação é adequada?",
+        options: ["COBIT trata de governança e gestão de TI alinhadas aos objetivos do negócio; ITIL reúne boas práticas de gerenciamento de serviços de TI.", "COBIT e ITIL são nomes diferentes para o mesmo modelo.", "ITIL é uma norma de segurança certificável, equivalente à ISO 27001.", "COBIT define apenas práticas de desenvolvimento ágil."],
+        answer: 0,
+        explain: "COBIT é um modelo de governança e gestão de TI, focado em alinhar a TI aos objetivos da organização. ITIL é um conjunto de boas práticas para gerenciar serviços de TI. Os dois são complementares." },
+    ],
+  },
+  {
+    id: "AET-FG-0021", course: "FG", title: "Pesquisa de clima da AETHELTEC",
+    from: "Bianca, analista de Pessoas",
+    brief: "A AETHELTEC fez sua primeira pesquisa de clima organizacional. Bianca precisa apresentar os resultados e recebeu pedidos delicados sobre os dados. Este chamado é de Formação Geral, comum a GTI e ADS.",
+    questions: [
+      { id: "FG0021-1", comp: "Interpretação de Dados",
+        text: "A empresa tem 400 funcionários. 120 responderam à pesquisa, e 90 dos respondentes se declararam satisfeitos. Qual afirmação é correta?",
+        options: ["75% dos funcionários da empresa estão satisfeitos.", "Apenas 22,5% da empresa está satisfeita, então a maioria está insatisfeita.", "75% dos respondentes estão satisfeitos; como só 30% responderam, é preciso cautela ao generalizar para toda a empresa.", "90% dos funcionários estão satisfeitos."],
+        answer: 2,
+        explain: "90 de 120 respondentes são 75%. Mas só 120 de 400 funcionários responderam (30%). Não é possível afirmar que 75% da empresa está satisfeita, nem que os 280 que não responderam estão insatisfeitos." },
+      { id: "FG0021-2", comp: "Ética e Cidadania",
+        text: "A pesquisa foi divulgada como anônima. Um gestor pede a Bianca a lista com os nomes de quem respondeu \"insatisfeito\". Qual é a conduta adequada?",
+        options: ["Enviar a lista, porque o gestor tem cargo superior.", "Recusar, porque isso quebraria o anonimato prometido e usaria os dados para outra finalidade; oferecer resultados agregados.", "Enviar apenas os e-mails, sem os nomes.", "Publicar a lista para toda a empresa, por transparência."],
+        answer: 1,
+        explain: "Os participantes responderam sob a promessa de anonimato. Identificá-los violaria esse compromisso e o princípio da finalidade previsto na LGPD. Resultados agregados atendem à gestão sem expor ninguém. E-mails também identificam pessoas." },
+      { id: "FG0021-3", comp: "Ética e Cidadania",
+        text: "Os resultados serão publicados no portal interno. Como incluir colaboradores com deficiência visual?",
+        options: ["Usar apenas gráficos coloridos, que são mais fáceis de entender.", "Publicar o relatório como imagem escaneada em PDF.", "Pedir que um colega leia o relatório para essas pessoas.", "Oferecer texto alternativo, uma tabela com os dados, bom contraste e navegação por teclado."],
+        answer: 3,
+        explain: "Texto alternativo e tabelas permitem a leitura por leitores de tela; contraste e teclado atendem a outras necessidades. Imagens escaneadas e informações transmitidas só por cor excluem parte das pessoas. Acessibilidade garante autonomia, sem depender de outra pessoa." },
+    ],
+  },
+];
+
+/* ============================================================
+   REGRAS PROVISÓRIAS (decisões CP0 ainda pendentes)
+   ============================================================ */
+const RULES = {
+  xpPorPrimeiroAcerto: 10,      // CP0-12 pendente
+  limiarTrainee: 100,           // CP0-12 pendente
+  minRespostasPorCompetencia: 3,// CP0-12 pendente: abaixo disso, "dados insuficientes"
+  limiarRecomendacao: 0.7,      // CP0-12 pendente
+};
+
+/* ============================================================
+   "SERVIDOR" SIMULADO — guarda contas no navegador
+   ============================================================ */
+const KEY = "enadetec.prototipo.v1";
+let mem = { accounts: {}, session: null, simulateFailure: false };
+function load(){ try { const raw = localStorage.getItem(KEY); if (raw) mem = Object.assign(mem, JSON.parse(raw)); } catch(e){} }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch(e){} }
+load();
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LETTERS = ["A","B","C","D","E"];
+
+function me(){ return mem.session ? mem.accounts[mem.session] : null; }
+function qById(qid){ for (const m of MISSIONS) for (const q of m.questions) if (q.id === qid) return { m, q }; return null; }
+function myMissions(acc){ return MISSIONS.filter(m => m.course === acc.course || m.course === "FG"); }
+function totalXP(acc){ return acc.xp.reduce((s, e) => s + e.amount, 0); }
+
+/* Envio de resposta: a correção acontece aqui, fora da tela da questão (no produto real, no servidor).
+   Mesmo requestKey = mesmo envio: devolve o resultado já registrado, sem novo XP. */
+async function serverSubmit(acc, requestKey, qid, choice){
+  await wait(650);
+  const existing = acc.attempts.find(a => a.key === requestKey);
+  if (existing) return { ...existing, replay: true };
+  const { q } = qById(qid);
+  const correct = choice === q.answer;
+  const alreadyCredited = acc.xp.some(e => e.qid === qid);
+  const xp = correct && !alreadyCredited ? RULES.xpPorPrimeiroAcerto : 0;
+  const attempt = { key: requestKey, qid, choice, correct, xp, alreadyCredited: correct && alreadyCredited, at: new Date().toISOString() };
+  acc.attempts.push(attempt);
+  if (xp) acc.xp.push({ qid, amount: xp, at: attempt.at });
+  save();
+  if (mem.simulateFailure && !state.failedOnce[requestKey]) {
+    state.failedOnce[requestKey] = true;
+    throw new Error("conexao");
+  }
+  return attempt;
+}
+
+/* ============================================================
+   CÁLCULOS: desempenho, nível e recomendação
+   ============================================================ */
+function compStats(acc){
+  const stats = {};
+  for (const m of myMissions(acc)) for (const q of m.questions) stats[q.comp] ??= { comp: q.comp, total: 0, right: 0 };
+  for (const a of acc.attempts){ const f = qById(a.qid); if (!f || !stats[f.q.comp]) continue; stats[f.q.comp].total++; if (a.correct) stats[f.q.comp].right++; }
+  return Object.values(stats);
+}
+function missionStatus(acc, m){
+  const answered = new Set(acc.attempts.map(a => a.qid));
+  const n = m.questions.filter(q => answered.has(q.id)).length;
+  return { n, total: m.questions.length, state: n === 0 ? "novo" : n === m.questions.length ? "concluido" : "andamento" };
+}
+function level(acc){
+  const xp = totalXP(acc);
+  return xp >= RULES.limiarTrainee
+    ? { cargo: "Trainee", next: null, xp, pct: 100 }
+    : { cargo: "Estagiário", next: "Trainee", xp, pct: Math.round(xp / RULES.limiarTrainee * 100), faltam: RULES.limiarTrainee - xp };
+}
+function recommend(acc){
+  const missions = myMissions(acc);
+  const weak = compStats(acc).filter(s => s.total > 0 && s.right / s.total < RULES.limiarRecomendacao).sort((a, b) => a.right / a.total - b.right / b.total)[0];
+  if (weak){
+    const cands = missions.filter(m => m.questions.some(q => q.comp === weak.comp));
+    const m = cands.find(c => missionStatus(acc, c).state !== "concluido") || cands[0];
+    return { m, why: `Você acertou ${weak.right} de ${weak.total} ${weak.total === 1 ? "questão" : "questões"} de ${weak.comp}. Este chamado trabalha essa competência.` };
+  }
+  const fresh = missions.find(m => missionStatus(acc, m).state !== "concluido");
+  if (fresh) return { m: fresh, why: acc.attempts.length ? "Seu desempenho está bom nas competências já praticadas. Este é o próximo chamado em aberto." : "Você ainda não respondeu nenhuma questão. Comece por este chamado para a plataforma conhecer seu desempenho." };
+  return null;
+}
+
+/* ============================================================
+   ESTADO DA TELA E RENDERIZAÇÃO
+   ============================================================ */
+const state = { screen: "auth", authTab: "entrar", errors: {}, values: {}, run: null, failedOnce: {}, busy: false, notice: "" };
+const $main = document.getElementById("main");
+const $top = document.getElementById("topbar");
+const $live = document.getElementById("live");
+function announce(t){ $live.textContent = ""; setTimeout(() => $live.textContent = t, 50); }
+
+function go(screen, opts = {}){ Object.assign(state, { screen, errors: {}, notice: "" }, opts); render(true); }
+
+function render(moveFocus){
+  const acc = me();
+  if (!acc) state.screen = "auth";
+  else if (!acc.course && state.screen !== "auth") state.screen = "curso";
+  renderTop(acc);
+  const views = { auth: vAuth, curso: vCurso, inicio: vInicio, missao: vMissao, progresso: vProgresso, sobre: vSobre };
+  $main.innerHTML = views[state.screen](acc);
+  if (moveFocus){
+    const t = $main.querySelector("[data-autofocus]") || $main.querySelector("h1");
+    if (t){ if (!t.hasAttribute("tabindex") && t.tagName === "H1") t.setAttribute("tabindex", "-1"); t.focus({ preventScroll: false }); }
+    window.scrollTo(0, 0);
+  }
+}
+
+function renderTop(acc){
+  if (!acc || !acc.course){ $top.hidden = true; return; }
+  $top.hidden = false;
+  const lv = level(acc);
+  const cur = s => state.screen === s || (s === "inicio" && state.screen === "missao") ? 'aria-current="page"' : "";
+  $top.innerHTML = `<div class="topbar-in">
+    <a class="mark" href="#main" data-go="inicio"><i aria-hidden="true">ET</i>ENADE TEC</a>
+    <div class="chips">
+      <span class="pill course" title="${esc(COURSES[acc.course].nome)}">${acc.course}</span>
+      <span class="pill">${lv.cargo}</span>
+      <span class="pill xp"><span class="num">${lv.xp}</span> XP</span>
+    </div>
+    <nav class="nav" aria-label="Principal">
+      <button type="button" data-go="inicio" ${cur("inicio")}>Início</button>
+      <button type="button" data-go="progresso" ${cur("progresso")}>Meu progresso</button>
+      <button type="button" data-go="sobre" ${cur("sobre")}>Sobre<span class="so-largo"> o protótipo</span></button>
+      <button type="button" class="out" data-action="sair">Sair</button>
+    </nav></div>`;
+}
+
+/* ---------- Entrar / criar conta ---------- */
+function fieldHTML(id, label, type, hint, autocomplete){
+  const err = state.errors[id], v = state.values[id] || "";
+  const desc = [hint ? `${id}-hint` : "", err ? `${id}-err` : ""].filter(Boolean).join(" ");
+  return `<div class="field">
+    <label for="${id}">${label}</label>
+    ${hint ? `<span class="hint" id="${id}-hint">${hint}</span>` : ""}
+    <input id="${id}" name="${id}" type="${type}" value="${type === "password" ? "" : esc(v)}" autocomplete="${autocomplete}" ${desc ? `aria-describedby="${desc}"` : ""} ${err ? 'aria-invalid="true"' : ""}>
+    ${err ? `<span class="ferr" id="${id}-err">${err}</span>` : ""}
+  </div>`;
+}
+function vAuth(){
+  const criar = state.authTab === "criar";
+  const geral = state.errors._geral;
+  const errs = Object.keys(state.errors).filter(k => k !== "_geral");
+  return `<div class="auth">
+    <section class="pitch" aria-labelledby="pitch-h">
+      <span class="eyebrow">Preparação para o ENADE · GTI e ADS</span>
+      <h1 id="pitch-h">Estude para o ENADE resolvendo chamados reais de uma empresa de tecnologia.</h1>
+      <p class="lede">Na AETHELTEC, você começa como estagiário. Cada chamado traz uma situação de trabalho e questões no estilo do ENADE. Depois de responder, você vê a explicação e acompanha seu desempenho em cada competência.</p>
+      <ol>
+        <li>Escolha seu curso: GTI ou ADS.</li>
+        <li>Resolva chamados do seu curso e de Formação Geral.</li>
+        <li>Leia a explicação de cada resposta.</li>
+        <li>Veja em quais competências precisa estudar mais.</li>
+      </ol>
+    </section>
+    <section class="card stack" aria-labelledby="form-h">
+      <h2 id="form-h" class="sr-only">${criar ? "Criar conta" : "Entrar"}</h2>
+      <div class="tabs" role="tablist" aria-label="Acesso">
+        <button type="button" role="tab" id="tab-entrar" aria-selected="${!criar}" aria-controls="auth-panel" data-tab="entrar" tabindex="${criar ? -1 : 0}">Entrar</button>
+        <button type="button" role="tab" id="tab-criar" aria-selected="${criar}" aria-controls="auth-panel" data-tab="criar" tabindex="${criar ? 0 : -1}">Criar conta</button>
+      </div>
+      <form id="auth-panel" role="tabpanel" aria-labelledby="tab-${state.authTab}" class="stack" novalidate data-form="auth">
+        ${geral ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>${geral}</strong></div>`
+          : errs.length ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>Corrija ${errs.length === 1 ? "o campo indicado" : `os ${errs.length} campos indicados`} para continuar.</strong></div>` : ""}
+        ${state.notice ? `<div class="alert info" role="status">${state.notice}</div>` : ""}
+        ${criar ? fieldHTML("nome", "Como quer ser chamado", "text", "Pode ser um apelido. Não precisa ser seu nome completo.", "nickname") : ""}
+        ${fieldHTML("email", "E-mail", "email", "", "email")}
+        ${fieldHTML("senha", "Senha", "password", criar ? "Use pelo menos 8 caracteres." : "", criar ? "new-password" : "current-password")}
+        <div class="row">
+          <button class="btn" type="submit" ${state.busy ? "disabled" : ""}>${state.busy ? '<span class="spin" aria-hidden="true"></span> Entrando…' : criar ? "Criar conta" : "Entrar"}</button>
+          ${criar ? "" : `<button type="button" class="btn link" data-action="esqueci">Esqueci minha senha</button>`}
+        </div>
+        <p class="hint">Protótipo: a senha não é salva nem conferida.</p>
+      </form>
+      <div class="divider">ou</div>
+      <button type="button" class="btn sec" data-action="demo">Entrar com a conta de demonstração</button>
+      <p class="hint">A conta de demonstração já tem algumas respostas, para mostrar progresso e recomendação.</p>
+    </section>
+  </div>`;
+}
+
+/* ---------- Escolha de curso ---------- */
+function vCurso(acc){
+  const err = state.errors.curso;
+  return `<section class="stack" style="max-width:640px">
+    <span class="eyebrow">Passo 1 de 1</span>
+    <h1>Olá, ${esc(acc.name)}. Qual é o seu curso?</h1>
+    <p class="lede">Mostramos os chamados do seu curso e os de Formação Geral, que são comuns a GTI e ADS.</p>
+    <form class="stack" novalidate data-form="curso">
+      ${err ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>${err}</strong></div>` : ""}
+      <fieldset ${err ? 'aria-describedby="curso-err"' : ""}>
+        <legend class="sr-only">Curso</legend>
+        ${Object.values(COURSES).map(c => `<label class="choice"><input type="radio" name="curso" value="${c.sigla}"><span><span class="t">${c.sigla}</span><br>${c.nome}</span></label>`).join("")}
+      </fieldset>
+      ${err ? `<span class="ferr" id="curso-err">${err}</span>` : ""}
+      <p class="hint">Trocar de curso depois ainda é uma regra em definição (decisão CP0-04).</p>
+      <div><button class="btn" type="submit">Continuar</button></div>
+    </form>
+  </section>`;
+}
+
+/* ---------- Início ---------- */
+function vInicio(acc){
+  const lv = level(acc), rec = recommend(acc), ms = myMissions(acc);
+  const statusPill = s => s.state === "concluido" ? `<span class="pill ok">✓ Concluído</span>` : s.state === "andamento" ? `<span class="pill prog">Em andamento · ${s.n} de ${s.total}</span>` : `<span class="pill">Novo</span>`;
+  return `<section class="stack">
+      <span class="eyebrow">AETHELTEC · ${esc(COURSES[acc.course].nome)}</span>
+      <h1>Olá, ${esc(acc.name)}</h1>
+    </section>
+    <div class="grid2">
+      <section class="card stack" aria-labelledby="lv-h">
+        <h2 id="lv-h" class="eyebrow">Sua evolução</h2>
+        <div class="level">
+          <span class="big">${lv.xp}<span class="sr-only"> pontos de experiência</span></span>
+          <span><strong>${lv.cargo}</strong>${lv.next ? ` · faltam <span class="num">${lv.faltam}</span> XP para ${lv.next}` : ""}</span>
+          <div class="bar xpbar" role="img" aria-label="${lv.pct}% do caminho até ${lv.next || "o próximo cargo"}"><span style="width:${lv.pct}%"></span></div>
+        </div>
+        <p class="hint">Você ganha ${RULES.xpPorPrimeiroAcerto} XP no primeiro acerto de cada questão. Valores provisórios (CP0-12).</p>
+      </section>
+      <section class="card reco stack" aria-labelledby="rec-h">
+        <h2 id="rec-h" class="eyebrow">Próximo estudo recomendado</h2>
+        ${rec ? `<h3>${esc(rec.m.title)}</h3><p class="why">${rec.why}</p>
+          <div><button class="btn" type="button" data-start="${rec.m.id}">${missionStatus(acc, rec.m).state === "concluido" ? "Praticar de novo" : "Abrir chamado"}</button></div>`
+        : `<p>Você concluiu todos os chamados disponíveis com bom desempenho. Novos chamados entram depois da revisão pedagógica.</p>`}
+      </section>
+    </div>
+    <section class="stack" aria-labelledby="ch-h">
+      <h2 id="ch-h">Chamados abertos para você</h2>
+      <div class="tickets">
+        ${ms.map(m => { const s = missionStatus(acc, m); const comps = [...new Set(m.questions.map(q => q.comp))];
+          return `<article class="ticket" aria-labelledby="t-${m.id}">
+            <div class="ticket-head"><span class="mono">${m.id}</span>${m.course === "FG" ? `<span class="tag">Formação Geral</span>` : ""}</div>
+            <h3 id="t-${m.id}">${esc(m.title)}</h3>
+            <div class="meta">${statusPill(s)}${comps.map(c => `<span class="tag">${c}</span>`).join("")}</div>
+            <div class="act"><button class="btn ${s.state === "concluido" ? "sec" : ""}" type="button" data-start="${m.id}" aria-describedby="t-${m.id}">${s.state === "concluido" ? "Praticar de novo" : s.state === "andamento" ? "Continuar" : "Abrir"}</button></div>
+          </article>`; }).join("")}
+      </div>
+    </section>`;
+}
+
+/* ---------- Missão ---------- */
+function startMission(id){
+  const m = MISSIONS.find(x => x.id === id), acc = me();
+  const answered = new Set(acc.attempts.map(a => a.qid));
+  const idx = missionStatus(acc, m).state === "andamento" ? m.questions.findIndex(q => !answered.has(q.id)) : 0;
+  state.run = { id: "r" + Date.now().toString(36), m, idx, phase: "brief", choice: null, result: null, results: [] };
+  go("missao");
+}
+function vMissao(acc){
+  const r = state.run, m = r.m;
+  const head = `<div class="row"><button type="button" class="btn link" data-go="inicio">← Voltar ao início</button></div>
+    <div class="ticket-head"><span class="mono">${m.id}</span><span class="tag">${m.course === "FG" ? "Formação Geral" : m.course}</span></div>`;
+  if (r.phase === "brief") return `${head}
+    <section class="stack">
+      <h1>${esc(m.title)}</h1>
+      <p class="hint">Aberto por ${esc(m.from)} · ${m.questions.length} questões · cerca de 5 minutos</p>
+      <p class="brief">${esc(m.brief)}</p>
+      <div><button class="btn" type="button" data-action="comecar" data-autofocus>${r.idx > 0 ? `Continuar da questão ${r.idx + 1}` : "Começar chamado"}</button></div>
+    </section>`;
+
+  if (r.phase === "summary"){
+    const right = r.results.filter(x => x.correct).length, xp = r.results.reduce((s, x) => s + x.xp, 0);
+    return `${head}<section class="stack">
+      <span class="eyebrow">Chamado concluído</span>
+      <h1>Você acertou ${right} de ${r.results.length} questões</h1>
+      <p class="lede">${xp ? `Você ganhou <strong class="xpline">${xp} XP</strong> neste chamado.` : "Nenhum XP novo neste chamado. O XP só conta no primeiro acerto de cada questão."} Seu desempenho por competência já foi atualizado.</p>
+      <div class="card"><div class="tablewrap"><table><thead><tr><th scope="col">Questão</th><th scope="col">Competência</th><th scope="col">Resultado</th><th scope="col">XP</th></tr></thead><tbody>
+        ${r.results.map((x, i) => `<tr><td>${i + 1}</td><td>${qById(x.qid).q.comp}</td><td>${x.correct ? "✓ Correta" : "✗ Incorreta"}</td><td class="num">${x.xp ? "+" + x.xp : "0"}</td></tr>`).join("")}
+      </tbody></table></div></div>
+      <div class="row">
+        <button class="btn" type="button" data-go="inicio">Voltar ao início</button>
+        <button class="btn sec" type="button" data-go="progresso">Ver meu progresso</button>
+        <button class="btn link" type="button" data-start="${m.id}">Praticar de novo</button>
+      </div></section>`;
+  }
+
+  const q = m.questions[r.idx];
+  const answered = r.phase === "feedback";
+  const res = r.result;
+  const opts = q.options.map((o, i) => {
+    let cls = "";
+    if (answered && i === q.answer) cls = "is-right";
+    else if (answered && i === r.choice && !res.correct) cls = "is-wrong";
+    const mark = answered && i === q.answer ? ' <strong>(resposta esperada)</strong>' : answered && i === r.choice && !res.correct ? ' <strong>(sua resposta)</strong>' : "";
+    return `<label class="choice ${cls}"><input type="radio" name="alt" value="${i}" ${r.choice === i ? "checked" : ""} ${answered || state.busy ? "disabled" : ""}><span><span class="letter">${LETTERS[i]})</span>${esc(o)}${mark}</span></label>`;
+  }).join("");
+
+  let feedback = "";
+  if (answered){
+    const xpTxt = res.xp ? `<p class="xpline">+${res.xp} XP</p>` : res.alreadyCredited ? `<p class="hint">Você já tinha recebido XP por esta questão. Praticar de novo conta para o seu desempenho, mas não repete o XP.</p>` : `<p class="hint">Sem XP desta vez. A explicação acima ajuda na próxima.</p>`;
+    feedback = `<section class="feedback ${res.correct ? "ok" : "no"}" aria-labelledby="fb-h" tabindex="-1" data-autofocus>
+      <h2 id="fb-h"><span class="ico" aria-hidden="true">${res.correct ? "✓" : "✗"}</span>${res.correct ? "Resposta correta" : "Resposta incorreta"}</h2>
+      ${res.correct ? "" : `<p>Você marcou <strong>${LETTERS[r.choice]}</strong>. A resposta esperada é <strong>${LETTERS[q.answer]}</strong>.</p>`}
+      <p>${esc(q.explain)}</p>
+      ${res.replay ? `<p class="hint">Sua resposta já estava registrada. O reenvio não gerou XP duplicado.</p>` : ""}
+      ${xpTxt}
+      <div><button class="btn" type="button" data-action="proxima">${r.idx + 1 < m.questions.length ? "Próxima questão" : "Ver resumo do chamado"}</button></div>
+    </section>`;
+  }
+
+  const err = state.errors.alt;
+  return `${head}
+    <section class="stack">
+      <h1 class="sr-only">${esc(m.title)}</h1>
+      <div class="row"><span class="eyebrow">Questão ${r.idx + 1} de ${m.questions.length}</span><span class="tag">${q.comp}</span></div>
+      <div class="bar" role="img" aria-label="Questão ${r.idx + 1} de ${m.questions.length}"><span style="width:${(r.idx + (answered ? 1 : 0)) / m.questions.length * 100}%"></span></div>
+      <form class="stack card" novalidate data-form="resposta">
+        ${q.code ? `<pre class="code"><code>${esc(q.code)}</code></pre>` : ""}
+        <fieldset ${err ? 'aria-describedby="alt-err"' : ""}>
+          <legend>${esc(q.text)}</legend>
+          ${opts}
+        </fieldset>
+        ${err ? `<p class="ferr" id="alt-err" role="alert">${err}</p>` : ""}
+        ${r.phase === "error" ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>Não foi possível confirmar o envio.</strong> Verifique sua conexão e tente de novo. Sua resposta não se perdeu e não vai contar duas vezes.</div>` : ""}
+        ${answered ? "" : `<div class="row">${state.busy
+          ? `<div class="loading" role="status"><span class="spin" aria-hidden="true"></span>Enviando resposta…</div>`
+          : `<button class="btn" type="submit">${r.phase === "error" ? "Tentar de novo" : "Enviar resposta"}</button>`}</div>`}
+      </form>
+      ${feedback}
+    </section>`;
+}
+
+/* ---------- Progresso ---------- */
+function vProgresso(acc){
+  const stats = compStats(acc);
+  const hist = [...acc.attempts].reverse();
+  if (!acc.attempts.length) return `<h1>Meu progresso</h1>
+    <section class="card empty"><h2>Nenhuma resposta ainda</h2><p>Seu desempenho por competência aparece aqui depois que você responder as primeiras questões.</p>
+    <button class="btn" type="button" data-start="${recommend(acc).m.id}">Abrir o primeiro chamado</button></section>`;
+  return `<section class="stack"><h1>Meu progresso</h1>
+    <p class="lede">O desempenho vem das suas respostas, contando todas as tentativas. Com menos de ${RULES.minRespostasPorCompetencia} respostas em uma competência, ainda não dá para tirar conclusões.</p></section>
+    <section class="card" aria-labelledby="cp-h"><h2 id="cp-h">Desempenho por competência</h2>
+      ${stats.map(s => { const pct = s.total ? Math.round(s.right / s.total * 100) : 0; const ok = s.total >= RULES.minRespostasPorCompetencia;
+        return `<div class="comp"><strong>${s.comp}</strong><span class="num">${s.total ? `${s.right} de ${s.total} acertos${ok ? ` · ${pct}%` : ""}` : "Sem respostas"}</span>
+          ${ok ? `<div class="bar" role="img" aria-label="${pct}% de acertos"><span style="width:${pct}%"></span></div>`
+               : `<span class="insuf">Dados insuficientes: ${s.total ? `faltam ${RULES.minRespostasPorCompetencia - s.total} ${RULES.minRespostasPorCompetencia - s.total === 1 ? "resposta" : "respostas"}` : `responda pelo menos ${RULES.minRespostasPorCompetencia} questões`} para calcular o desempenho.</span>`}
+        </div>`; }).join("")}
+    </section>
+    <section class="card stack" aria-labelledby="hi-h"><h2 id="hi-h">Histórico de respostas</h2>
+      <div class="tablewrap"><table><thead><tr><th scope="col">Data</th><th scope="col">Chamado</th><th scope="col">Competência</th><th scope="col">Resultado</th><th scope="col">XP</th></tr></thead><tbody>
+      ${hist.map(a => { const f = qById(a.qid); return `<tr><td class="num">${new Date(a.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td><span class="mono">${f.m.id}</span></td><td>${f.q.comp}</td><td>${a.correct ? "✓ Correta" : "✗ Incorreta"}</td><td class="num">${a.xp ? "+" + a.xp : "0"}</td></tr>`; }).join("")}
+      </tbody></table></div>
+    </section>`;
+}
+
+/* ---------- Sobre o protótipo ---------- */
+function vSobre(){
+  const rows = [
+    ["C0-R01", "Acesso e perfil mínimo com GTI ou ADS", "Criar conta (apelido, e-mail, senha), entrar e escolher o curso. Curso inválido não é aceito."],
+    ["C0-R02", "Questão contextualizada e revisada", "Cada questão tem competência, contexto AETHELTEC e explicação. Revisão pedagógica ainda pendente."],
+    ["C0-R03", "Missão com conteúdo do curso", "GTI e ADS veem chamados diferentes; Formação Geral aparece para os dois."],
+    ["C0-R04", "Tentativa e feedback", "Toda resposta recebe resultado e explicação e fica no histórico."],
+    ["C0-R05", "Desempenho e próximo estudo", "Desempenho calculado das respostas, aviso de dados insuficientes e recomendação para um chamado existente."],
+    ["C0-R06", "XP e evolução mínimos", "XP só no primeiro acerto; reenvio e nova prática não duplicam XP."],
+    ["C0-R07", "Autorização por objeto", "Simulado: cada e-mail tem dados separados neste navegador. Só o backend real comprova isso."],
+    ["C0-R08", "Gabarito protegido", "Não atendido no protótipo: o gabarito está na página. No produto, a correção fica no servidor."],
+    ["C0-R09", "Acessibilidade do fluxo essencial", "Fluxo completo por teclado, foco visível, rótulos, resultado em texto além da cor, tema claro e escuro."],
+  ];
+  const pend = [
+    ["CP0-02", "Login", "E-mail e senha, sem confirmação de e-mail. Recuperação de senha ainda não desenhada."],
+    ["CP0-04", "Campos do perfil", "Só apelido, e-mail e curso. Troca de curso fora do protótipo."],
+    ["CP0-10", "Corte do MVP", "Sem ranking, sem diagnóstico inicial separado, sem avatares e sem os oito cargos."],
+    ["CP0-11", "Tentativas", "A explicação aparece logo após a primeira resposta. É possível praticar o chamado de novo."],
+    ["CP0-12", "XP e limiares", `${RULES.xpPorPrimeiroAcerto} XP por primeiro acerto, Trainee com ${RULES.limiarTrainee} XP, mínimo de ${RULES.minRespostasPorCompetencia} respostas por competência, recomendação abaixo de ${RULES.limiarRecomendacao * 100}%.`],
+  ];
+  return `<section class="stack"><h1>Sobre o protótipo</h1>
+    <p class="lede">Este é o MVP navegável do ENADE TEC, feito pela equipe de Produto e UX para validar a jornada principal. Ele funciona de ponta a ponta no navegador, mas não tem servidor, banco de dados nem autenticação real.</p></section>
+    <section class="card stack" aria-labelledby="ds-h">
+      <h2 id="ds-h">Ferramentas para a demonstração</h2>
+      <label class="switch"><input type="checkbox" id="sim-falha" ${mem.simulateFailure ? "checked" : ""}><span><strong>Simular falha de conexão no envio</strong><br><span class="hint">A primeira tentativa de enviar cada resposta falha depois de registrada. Ao tentar de novo, a resposta é recuperada sem XP duplicado.</span></span></label>
+      <div class="row"><button class="btn sec" type="button" data-action="reset">Apagar minhas respostas</button><span class="hint" id="reset-msg" role="status"></span></div>
+    </section>
+    <section class="card stack" aria-labelledby="dp-h">
+      <h2 id="dp-h">Decisões pendentes assumidas provisoriamente</h2>
+      <div class="tablewrap"><table><thead><tr><th scope="col">Decisão</th><th scope="col">Tema</th><th scope="col">O que o protótipo assume</th></tr></thead><tbody>
+        ${pend.map(p => `<tr><td class="mono">${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td></tr>`).join("")}
+      </tbody></table></div>
+    </section>
+    <section class="card stack" aria-labelledby="rq-h">
+      <h2 id="rq-h">Requisitos do núcleo e como aparecem aqui</h2>
+      <div class="tablewrap"><table><thead><tr><th scope="col">ID</th><th scope="col">Requisito</th><th scope="col">No protótipo</th></tr></thead><tbody>
+        ${rows.map(p => `<tr><td class="mono">${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td></tr>`).join("")}
+      </tbody></table></div>
+    </section>`;
+}
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+function demoAccount(){
+  const email = "demo@aetheltec.example";
+  if (!mem.accounts[email]){
+    const t = d => new Date(Date.now() - d * 3600e3).toISOString();
+    mem.accounts[email] = { name: "Rafa", email, course: "ADS",
+      attempts: [
+        { key: "seed1", qid: "ADS0142-1", choice: 0, correct: false, xp: 0, at: t(26) },
+        { key: "seed2", qid: "ADS0142-2", choice: 0, correct: true, xp: 10, at: t(26) },
+        { key: "seed3", qid: "ADS0142-3", choice: 3, correct: false, xp: 0, at: t(25.9) },
+        { key: "seed4", qid: "FG0021-1", choice: 2, correct: true, xp: 10, at: t(3) },
+      ],
+      xp: [{ qid: "ADS0142-2", amount: 10, at: t(26) }, { qid: "FG0021-1", amount: 10, at: t(3) }] };
+  }
+  return email;
+}
+
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-go],[data-action],[data-start],[data-tab]");
+  if (!el) return;
+  if (el.dataset.go){ e.preventDefault(); return go(el.dataset.go); }
+  if (el.dataset.start) return startMission(el.dataset.start);
+  if (el.dataset.tab){ state.values = {}; return go("auth", { authTab: el.dataset.tab }); }
+  const a = el.dataset.action;
+  if (a === "sair"){ mem.session = null; save(); state.values = {}; return go("auth", { authTab: "entrar" }); }
+  if (a === "esqueci"){ state.notice = "A recuperação de senha depende da decisão CP0-02 e ainda não faz parte do protótipo."; render(false); announce(state.notice); return; }
+  if (a === "demo"){ mem.session = demoAccount(); save(); return go("inicio"); }
+  if (a === "comecar"){ state.run.phase = "question"; return render(true); }
+  if (a === "proxima"){
+    const r = state.run;
+    if (r.idx + 1 < r.m.questions.length){ Object.assign(r, { idx: r.idx + 1, phase: "question", choice: null, result: null }); state.errors = {}; return render(true); }
+    r.phase = "summary"; return render(true);
+  }
+  if (a === "reset"){ const acc = me(); acc.attempts = []; acc.xp = []; save(); renderTop(acc); const m = document.getElementById("reset-msg"); m.textContent = "Respostas e XP apagados desta conta."; return; }
+});
+
+document.addEventListener("keydown", e => {
+  const tab = e.target.closest('[role="tab"]');
+  if (tab && (e.key === "ArrowRight" || e.key === "ArrowLeft")){
+    const next = tab.dataset.tab === "entrar" ? "criar" : "entrar";
+    state.values = {}; go("auth", { authTab: next });
+    document.getElementById("tab-" + next).focus();
+  }
+});
+
+document.addEventListener("change", e => {
+  if (e.target.id === "sim-falha"){ mem.simulateFailure = e.target.checked; save(); announce(e.target.checked ? "Simulação de falha ligada." : "Simulação de falha desligada."); }
+  if (e.target.name === "alt" && state.run){ state.run.choice = Number(e.target.value); if (state.errors.alt){ state.errors = {}; render(false); document.querySelector(`input[name=alt][value="${state.run.choice}"]`)?.focus(); } }
+});
+
+document.addEventListener("submit", async e => {
+  e.preventDefault();
+  const form = e.target, kind = form.dataset.form;
+
+  if (kind === "auth"){
+    const criar = state.authTab === "criar";
+    const v = { nome: form.nome?.value.trim() || "", email: form.email.value.trim().toLowerCase(), senha: form.senha.value };
+    const err = {};
+    if (criar && !v.nome) err.nome = "Informe como quer ser chamado.";
+    if (!v.email) err.email = "Informe seu e-mail.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) err.email = "Confira o e-mail. Ele precisa ter o formato nome@exemplo.com.";
+    if (!v.senha) err.senha = "Informe sua senha.";
+    else if (criar && v.senha.length < 8) err.senha = `A senha tem ${v.senha.length} caracteres. Use pelo menos 8.`;
+    // Mensagens neutras: não revelam se o e-mail tem conta (RNF-PRV-001)
+    const semErroDeCampo = !Object.keys(err).length;
+    if (semErroDeCampo && criar && mem.accounts[v.email]) err._geral = "Não foi possível criar a conta com estes dados. Se você já tem conta, use a aba Entrar.";
+    if (semErroDeCampo && !criar && !mem.accounts[v.email]) err._geral = "E-mail ou senha incorretos. Confira os dados ou crie uma conta.";
+    state.values = { nome: v.nome, email: v.email };
+    if (Object.keys(err).length){ state.errors = err; return render(true); }
+    state.busy = true; state.errors = {}; render(false);
+    await wait(500);
+    state.busy = false;
+    if (criar) mem.accounts[v.email] = { name: v.nome, email: v.email, course: null, attempts: [], xp: [] };
+    mem.session = v.email; save(); state.values = {};
+    return go(mem.accounts[v.email].course ? "inicio" : "curso");
+  }
+
+  if (kind === "curso"){
+    const c = form.curso.value;
+    if (!COURSES[c]){ state.errors = { curso: "Escolha GTI ou ADS para continuar." }; return render(true); }
+    me().course = c; save(); return go("inicio");
+  }
+
+  if (kind === "resposta"){
+    const r = state.run;
+    if (r.choice === null){ state.errors = { alt: "Escolha uma alternativa para enviar." }; render(false); form.querySelector("input[name=alt]")?.focus(); return; }
+    const q = r.m.questions[r.idx];
+    const key = r.id + ":" + q.id;
+    state.busy = true; state.errors = {}; render(false); announce("Enviando resposta.");
+    try {
+      const res = await serverSubmit(me(), key, q.id, r.choice);
+      state.busy = false;
+      r.result = res; r.phase = "feedback";
+      if (!r.results.find(x => x.qid === q.id)) r.results.push(res);
+      render(true);
+      announce(res.correct ? "Resposta correta." : "Resposta incorreta.");
+    } catch(err){
+      state.busy = false; r.phase = "error"; render(true);
+    }
+  }
+});
+
+if (me()) state.screen = me().course ? "inicio" : "curso";
+render(true);
+</script>
+</body>
+</html>
