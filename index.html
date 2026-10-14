@@ -62,6 +62,7 @@ a{color:var(--brand)}
 .nav button[aria-current="page"]{color:var(--ink);background:var(--surface-2);font-weight:700}
 .nav button:hover{color:var(--ink)}
 .nav .out{margin-left:auto}
+@media (max-width:560px){.nav button{padding:6px 8px}.nav .so-largo{display:none}}
 
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap}
 .pill.xp{background:var(--xp-soft);color:var(--xp);border-color:transparent}
@@ -114,8 +115,9 @@ input[aria-invalid="true"]{border-color:var(--err)}
 .choice input{margin-top:5px;width:18px;height:18px;accent-color:var(--brand);flex:none}
 .choice .t{font-weight:700}
 .choice .letter{font-family:var(--f-mono);font-weight:500;color:var(--muted);margin-right:4px}
-.choice.is-right{border-color:var(--ok);background:var(--ok-soft)}
-.choice.is-wrong{border-color:var(--err);background:var(--err-soft)}
+/* Resultado vence o estado "marcada": a alternativa errada marcada precisa aparecer como erro */
+.choice.is-right,.choice.is-right:has(input:checked){border-color:var(--ok);background:var(--ok-soft)}
+.choice.is-wrong,.choice.is-wrong:has(input:checked){border-color:var(--err);background:var(--err-soft)}
 fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;min-width:0}
 legend{padding:0;margin-bottom:10px;font-size:1.08rem;font-weight:700;line-height:1.45}
 pre.code{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--f-mono);font-size:.88rem;margin:0}
@@ -424,7 +426,7 @@ function renderTop(acc){
     <nav class="nav" aria-label="Principal">
       <button type="button" data-go="inicio" ${cur("inicio")}>Início</button>
       <button type="button" data-go="progresso" ${cur("progresso")}>Meu progresso</button>
-      <button type="button" data-go="sobre" ${cur("sobre")}>Sobre o protótipo</button>
+      <button type="button" data-go="sobre" ${cur("sobre")}>Sobre<span class="so-largo"> o protótipo</span></button>
       <button type="button" class="out" data-action="sair">Sair</button>
     </nav></div>`;
 }
@@ -442,7 +444,8 @@ function fieldHTML(id, label, type, hint, autocomplete){
 }
 function vAuth(){
   const criar = state.authTab === "criar";
-  const errs = Object.values(state.errors);
+  const geral = state.errors._geral;
+  const errs = Object.keys(state.errors).filter(k => k !== "_geral");
   return `<div class="auth">
     <section class="pitch" aria-labelledby="pitch-h">
       <span class="eyebrow">Preparação para o ENADE · GTI e ADS</span>
@@ -462,7 +465,8 @@ function vAuth(){
         <button type="button" role="tab" id="tab-criar" aria-selected="${criar}" aria-controls="auth-panel" data-tab="criar" tabindex="${criar ? 0 : -1}">Criar conta</button>
       </div>
       <form id="auth-panel" role="tabpanel" aria-labelledby="tab-${state.authTab}" class="stack" novalidate data-form="auth">
-        ${errs.length ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>Corrija ${errs.length === 1 ? "o campo indicado" : `os ${errs.length} campos indicados`} para continuar.</strong></div>` : ""}
+        ${geral ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>${geral}</strong></div>`
+          : errs.length ? `<div class="alert err" role="alert" tabindex="-1" data-autofocus><strong>Corrija ${errs.length === 1 ? "o campo indicado" : `os ${errs.length} campos indicados`} para continuar.</strong></div>` : ""}
         ${state.notice ? `<div class="alert info" role="status">${state.notice}</div>` : ""}
         ${criar ? fieldHTML("nome", "Como quer ser chamado", "text", "Pode ser um apelido. Não precisa ser seu nome completo.", "nickname") : ""}
         ${fieldHTML("email", "E-mail", "email", "", "email")}
@@ -588,7 +592,7 @@ function vMissao(acc){
 
   let feedback = "";
   if (answered){
-    const xpTxt = res.xp ? `<p class="xpline">+${res.xp} XP</p>` : res.alreadyCredited ? `<p class="hint">Você já tinha recebido XP por esta questão. Praticar de novo conta para o seu desempenho, mas não repete o XP.</p>` : `<p class="hint">Sem XP desta vez. A explicação abaixo ajuda na próxima.</p>`;
+    const xpTxt = res.xp ? `<p class="xpline">+${res.xp} XP</p>` : res.alreadyCredited ? `<p class="hint">Você já tinha recebido XP por esta questão. Praticar de novo conta para o seu desempenho, mas não repete o XP.</p>` : `<p class="hint">Sem XP desta vez. A explicação acima ajuda na próxima.</p>`;
     feedback = `<section class="feedback ${res.correct ? "ok" : "no"}" aria-labelledby="fb-h" tabindex="-1" data-autofocus>
       <h2 id="fb-h"><span class="ico" aria-hidden="true">${res.correct ? "✓" : "✗"}</span>${res.correct ? "Resposta correta" : "Resposta incorreta"}</h2>
       ${res.correct ? "" : `<p>Você marcou <strong>${LETTERS[r.choice]}</strong>. A resposta esperada é <strong>${LETTERS[q.answer]}</strong>.</p>`}
@@ -750,8 +754,10 @@ document.addEventListener("submit", async e => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) err.email = "Confira o e-mail. Ele precisa ter o formato nome@exemplo.com.";
     if (!v.senha) err.senha = "Informe sua senha.";
     else if (criar && v.senha.length < 8) err.senha = `A senha tem ${v.senha.length} caracteres. Use pelo menos 8.`;
-    if (!err.email && criar && mem.accounts[v.email]) err.email = "Já existe uma conta com este e-mail. Use a aba Entrar.";
-    if (!err.email && !criar && !mem.accounts[v.email]) err.email = "Não encontramos uma conta com este e-mail. Confira o endereço ou crie uma conta.";
+    // Mensagens neutras: não revelam se o e-mail tem conta (RNF-PRV-001)
+    const semErroDeCampo = !Object.keys(err).length;
+    if (semErroDeCampo && criar && mem.accounts[v.email]) err._geral = "Não foi possível criar a conta com estes dados. Se você já tem conta, use a aba Entrar.";
+    if (semErroDeCampo && !criar && !mem.accounts[v.email]) err._geral = "E-mail ou senha incorretos. Confira os dados ou crie uma conta.";
     state.values = { nome: v.nome, email: v.email };
     if (Object.keys(err).length){ state.errors = err; return render(true); }
     state.busy = true; state.errors = {}; render(false);
