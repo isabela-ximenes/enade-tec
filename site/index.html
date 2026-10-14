@@ -478,8 +478,11 @@ function vAuth(){
         <p class="hint">Protótipo: a senha não é salva nem conferida.</p>
       </form>
       <div class="divider">ou</div>
-      <button type="button" class="btn sec" data-action="demo">Entrar com a conta de demonstração</button>
-      <p class="hint">A conta de demonstração já tem algumas respostas, para mostrar progresso e recomendação.</p>
+      <div class="row">
+        <button type="button" class="btn sec" data-action="demo" data-curso="ADS">Demonstração ADS</button>
+        <button type="button" class="btn sec" data-action="demo" data-curso="GTI">Demonstração GTI</button>
+      </div>
+      <p class="hint">Uma conta de demonstração para cada curso, já com algumas respostas para mostrar progresso e recomendação.</p>
     </section>
   </div>`;
 }
@@ -692,20 +695,23 @@ function vSobre(){
 /* ============================================================
    EVENTOS
    ============================================================ */
-function demoAccount(){
-  const email = "demo@aetheltec.example";
-  if (!mem.accounts[email]){
-    const t = d => new Date(Date.now() - d * 3600e3).toISOString();
-    mem.accounts[email] = { name: "Rafa", email, course: "ADS",
-      attempts: [
-        { key: "seed1", qid: "ADS0142-1", choice: 0, correct: false, xp: 0, at: t(26) },
-        { key: "seed2", qid: "ADS0142-2", choice: 0, correct: true, xp: 10, at: t(26) },
-        { key: "seed3", qid: "ADS0142-3", choice: 3, correct: false, xp: 0, at: t(25.9) },
-        { key: "seed4", qid: "FG0021-1", choice: 2, correct: true, xp: 10, at: t(3) },
-      ],
-      xp: [{ qid: "ADS0142-2", amount: 10, at: t(26) }, { qid: "FG0021-1", amount: 10, at: t(3) }] };
+// Uma conta de demonstração por curso, já com algumas respostas: [questão, alternativa, acertou, horas atrás]
+const DEMOS = {
+  ADS: { email: "demo@aetheltec.example", name: "Rafa",
+    respostas: [["ADS0142-1", 0, false, 26], ["ADS0142-2", 0, true, 26], ["ADS0142-3", 3, false, 25.9], ["FG0021-1", 2, true, 3]] },
+  GTI: { email: "demo-gti@aetheltec.example", name: "Caio",
+    respostas: [["GTI0088-1", 2, true, 30], ["GTI0088-2", 0, true, 30], ["GTI0088-3", 0, false, 29.9], ["GTI0093-1", 0, false, 4]] },
+};
+function demoAccount(curso = "ADS"){
+  const d = DEMOS[curso];
+  if (!mem.accounts[d.email]){
+    const t = h => new Date(Date.now() - h * 3600e3).toISOString();
+    const attempts = d.respostas.map(([qid, choice, correct, h], i) =>
+      ({ key: `seed-${curso}-${i}`, qid, choice, correct, xp: correct ? RULES.xpPorPrimeiroAcerto : 0, at: t(h) }));
+    mem.accounts[d.email] = { name: d.name, email: d.email, course: curso, attempts,
+      xp: attempts.filter(a => a.xp).map(a => ({ qid: a.qid, amount: a.xp, at: a.at })) };
   }
-  return email;
+  return d.email;
 }
 
 document.addEventListener("click", async e => {
@@ -717,7 +723,7 @@ document.addEventListener("click", async e => {
   const a = el.dataset.action;
   if (a === "sair"){ mem.session = null; save(); state.values = {}; return go("auth", { authTab: "entrar" }); }
   if (a === "esqueci"){ state.notice = "A recuperação de senha depende da decisão CP0-02 e ainda não faz parte do protótipo."; render(false); announce(state.notice); return; }
-  if (a === "demo"){ mem.session = demoAccount(); save(); return go("inicio"); }
+  if (a === "demo"){ mem.session = demoAccount(el.dataset.curso); save(); return go("inicio"); }
   if (a === "comecar"){ state.run.phase = "question"; return render(true); }
   if (a === "proxima"){
     const r = state.run;
